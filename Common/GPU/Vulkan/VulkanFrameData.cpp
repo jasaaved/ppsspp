@@ -99,6 +99,13 @@ void FrameData::AcquireNextImage(VulkanContext *vulkan) {
 		ERROR_LOG(Log::G3D, "%s returned from AcquireNextImage - ignoring, but this better be during shutdown", VulkanResultToString(res));
 		skipSwap = true;
 		break;
+#ifdef VK_EXT_full_screen_exclusive
+	case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:
+		vulkan->NotifyFullScreenExclusiveModeLost();
+		WARN_LOG(Log::G3D, "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT from AcquireNextImage");
+		skipSwap = true;
+		break;
+#endif
 	default:
 		// Weird, shouldn't get any other values. Maybe lost device?
 		_assert_msg_(false, "vkAcquireNextImageKHR failed! result=%s", VulkanResultToString(res));

@@ -1610,6 +1610,11 @@ void VulkanRenderManager::Run(VKRRenderThreadTask &task) {
 				// Can't really do anything about this here, but let's try to continue anyway, maybe the app is in the process of being switched
 				// away from on Android or something.
 				outOfDateFrames_++;
+#ifdef VK_EXT_full_screen_exclusive
+			} else if (res == VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT) {
+				vulkan_->NotifyFullScreenExclusiveModeLost();
+				outOfDateFrames_++;
+#endif
 			} else if (res != VK_SUCCESS) {
 				_assert_msg_(false, "vkQueuePresentKHR failed! result=%s", VulkanResultToString(res));
 			} else {

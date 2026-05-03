@@ -243,6 +243,10 @@ PFN_vkCreateRenderPass2 vkCreateRenderPass2;
 PFN_vkWaitForPresentKHR vkWaitForPresentKHR;
 PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
+#ifdef VK_EXT_full_screen_exclusive
+PFN_vkAcquireFullScreenExclusiveModeEXT vkAcquireFullScreenExclusiveModeEXT;
+PFN_vkReleaseFullScreenExclusiveModeEXT vkReleaseFullScreenExclusiveModeEXT;
+#endif
 #endif
 } // namespace PPSSPP_VK
 
@@ -889,6 +893,12 @@ void VulkanLoadDeviceFunctions(VkDevice device, const VulkanExtensions &enabledE
 	if (enabledExtensions.KHR_present_wait) {
 		LOAD_DEVICE_FUNC(device, vkWaitForPresentKHR);
 	}
+#ifdef VK_EXT_full_screen_exclusive
+	if (enabledExtensions.EXT_full_screen_exclusive) {
+		LOAD_DEVICE_FUNC(device, vkAcquireFullScreenExclusiveModeEXT);
+		LOAD_DEVICE_FUNC(device, vkReleaseFullScreenExclusiveModeEXT);
+	}
+#endif
 	if (enabledExtensions.GOOGLE_display_timing) {
 		LOAD_DEVICE_FUNC(device, vkGetPastPresentationTimingGOOGLE);
 		LOAD_DEVICE_FUNC(device, vkGetRefreshCycleDurationGOOGLE);

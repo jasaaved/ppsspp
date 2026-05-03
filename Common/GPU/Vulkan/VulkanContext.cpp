@@ -1582,11 +1582,9 @@ bool VulkanContext::InitSwapchain(VkPresentModeKHR desiredPresentMode) {
 	VkSurfaceFullScreenExclusiveInfoEXT fullScreenInfo{ VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT };
 	VkSurfaceFullScreenExclusiveWin32InfoEXT win32ExclusiveInfo{ VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT };
 	if (extensionsLookup_.EXT_full_screen_exclusive) {
+		win32ExclusiveInfo.hmonitor = MonitorFromWindow((HWND)winsysData2_, MONITOR_DEFAULTTONEAREST);
+		fullScreenInfo.pNext = &win32ExclusiveInfo;
 		fullScreenInfo.fullScreenExclusive = fullScreenExclusiveMode_;
-		if (fullScreenExclusiveMode_ == VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT) {
-			win32ExclusiveInfo.hmonitor = MonitorFromWindow((HWND)winsysData2_, MONITOR_DEFAULTTONEAREST);
-			fullScreenInfo.pNext = &win32ExclusiveInfo;
-		}
 		swap_chain_info.pNext = &fullScreenInfo;
 	}
 #endif
@@ -1601,10 +1599,38 @@ bool VulkanContext::InitSwapchain(VkPresentModeKHR desiredPresentMode) {
 
 	if (oldSwapchain != VK_NULL_HANDLE) {
 		vkDestroySwapchainKHR(device_, oldSwapchain, nullptr);
+#ifdef VK_EXT_full_screen_exclusive
+		fullScreenExclusiveAcquired_ = false;
+#endif
 		INFO_LOG(Log::G3D, "Destroyed old swapchain.");
 	}
 	return true;
 }
+
+#ifdef VK_EXT_full_screen_exclusive
+bool VulkanContext::AcquireFullScreenExclusiveMode() {
+	if (fullScreenExclusiveAcquired_)
+		return true;
+	VkResult res = vkAcquireFullScreenExclusiveModeEXT(device_, swapchain_);
+	if (res == VK_SUCCESS) {
+		fullScreenExclusiveAcquired_ = true;
+	} else {
+		ERROR_LOG(Log::G3D, "vkAcquireFullScreenExclusiveModeEXT failed: %s", VulkanResultToString(res));
+	}
+	return fullScreenExclusiveAcquired_;
+}
+
+bool VulkanContext::ReleaseFullScreenExclusiveMode() {
+	if (!fullScreenExclusiveAcquired_)
+		return true;
+	VkResult res = vkReleaseFullScreenExclusiveModeEXT(device_, swapchain_);
+	if (res != VK_SUCCESS) {
+		ERROR_LOG(Log::G3D, "vkReleaseFullScreenExclusiveModeEXT failed: %s", VulkanResultToString(res));
+	}
+	fullScreenExclusiveAcquired_ = false;
+	return true;
+}
+#endif
 
 void VulkanContext::SetCbGetDrawSize(std::function<VkExtent2D()> cb) {
 	cbGetDrawSize_ = cb;

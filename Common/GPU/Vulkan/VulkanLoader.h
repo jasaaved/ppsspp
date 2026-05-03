@@ -246,6 +246,10 @@ extern PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesE
 extern PFN_vkWaitForPresentKHR vkWaitForPresentKHR;
 extern PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 extern PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
+#ifdef VK_EXT_full_screen_exclusive
+extern PFN_vkAcquireFullScreenExclusiveModeEXT vkAcquireFullScreenExclusiveModeEXT;
+extern PFN_vkReleaseFullScreenExclusiveModeEXT vkReleaseFullScreenExclusiveModeEXT;
+#endif
 #endif  // !PPSSPP_PLATFORM(IOS_APP_STORE)
 } // namespace PPSSPP_VK
 

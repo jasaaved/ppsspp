@@ -127,17 +127,16 @@ bool WindowsVulkanContext::Init(HINSTANCE hInst, HWND hWnd, std::string *error_m
 
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
 
-#ifdef VK_EXT_full_screen_exclusive
-	vulkan_->SetFullScreenExclusiveMode(g_Config.bFullScreen && g_Config.bFullScreenExclusive
-		? VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-		: VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
-#endif
-
 	if (!vulkan_->InitSwapchain(presentMode)) {
 		*error_message = vulkan_->InitError();
 		Shutdown();
 		return false;
 	}
+
+#ifdef VK_EXT_full_screen_exclusive
+	if (g_Config.bFullScreen && g_Config.bFullScreenExclusive)
+		vulkan_->AcquireFullScreenExclusiveMode();
+#endif
 
 	SetGPUBackend(GPUBackend::VULKAN, vulkan_->GetPhysicalDeviceProperties(deviceNum).properties.deviceName);
 	bool success = draw_->CreatePresets();
@@ -161,6 +160,9 @@ void WindowsVulkanContext::Shutdown() {
 	draw_ = nullptr;
 
 	vulkan_->WaitUntilQueueIdle();
+#ifdef VK_EXT_full_screen_exclusive
+	vulkan_->ReleaseFullScreenExclusiveMode();
+#endif
 	vulkan_->DestroySwapchain();
 	vulkan_->DestroySurface();
 	vulkan_->DestroyDevice();
@@ -176,14 +178,18 @@ void WindowsVulkanContext::Shutdown() {
 void WindowsVulkanContext::Resize() {
 	draw_->HandleEvent(Draw::Event::LOST_BACKBUFFER, vulkan_->GetBackbufferWidth(), vulkan_->GetBackbufferHeight());
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
-
 #ifdef VK_EXT_full_screen_exclusive
-	vulkan_->SetFullScreenExclusiveMode(g_Config.bFullScreen && g_Config.bFullScreenExclusive
-		? VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-		: VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
+	bool wasExclusive = vulkan_->HasFullScreenExclusiveMode();
+	vulkan_->ReleaseFullScreenExclusiveMode();
+	if (wasExclusive) {
+		vulkan_->DestroySwapchain();
+	}
 #endif
-
 	vulkan_->InitSwapchain(presentMode);
+#ifdef VK_EXT_full_screen_exclusive
+	if (g_Config.bFullScreen && g_Config.bFullScreenExclusive)
+		vulkan_->AcquireFullScreenExclusiveMode();
+#endif
 	draw_->HandleEvent(Draw::Event::GOT_BACKBUFFER, vulkan_->GetBackbufferWidth(), vulkan_->GetBackbufferHeight());
 }
 
