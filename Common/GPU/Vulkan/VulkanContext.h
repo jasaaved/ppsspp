@@ -420,6 +420,7 @@ public:
 	void NotifyFullScreenExclusiveModeLost() { fullScreenExclusiveAcquired_ = false; }
 	void SetFullScreenExclusiveMode(VkFullScreenExclusiveEXT mode) { fullScreenExclusiveMode_ = mode; }
 #endif
+	bool FullScreenExclusiveSurfaceSupported() const { return fullScreenExclusiveSurfaceSupported_; }
 
 	std::vector<VkPresentModeKHR> GetAvailablePresentModes() const {
 		return availablePresentModes_;
@@ -542,6 +543,7 @@ private:
 	VkFullScreenExclusiveEXT fullScreenExclusiveMode_ = VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT;
 	bool fullScreenExclusiveAcquired_ = false;
 #endif
+	bool fullScreenExclusiveSurfaceSupported_ = false;
 
 
 	VkSurfaceCapabilitiesKHR surfCapabilities_{};

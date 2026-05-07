@@ -198,6 +198,12 @@ VkResult VulkanContext::CreateInstance(const CreateInfo &info) {
 		extensionsLookup_.EXT_swapchain_colorspace = true;
 	}
 
+#ifdef VK_KHR_get_surface_capabilities2
+	if (EnableInstanceExtension(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME, 0)) {
+		extensionsLookup_.KHR_get_surface_capabilities2 = true;
+	}
+#endif
+
 	// Validate that all the instance extensions we ask for are actually available.
 	for (auto ext : instance_extensions_enabled_) {
 		if (!IsInstanceExtensionAvailable(ext))
@@ -1282,6 +1288,29 @@ VkResult VulkanContext::ReinitSurface() {
 		res = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_devices_[physical_device_], surface_, &presentModeCount, availablePresentModes_.data());
 		_dbg_assert_(res == VK_SUCCESS);
 	}
+
+#if defined(VK_KHR_get_surface_capabilities2) && defined(VK_EXT_full_screen_exclusive)
+	fullScreenExclusiveSurfaceSupported_ = false;
+	if (extensionsLookup_.KHR_get_surface_capabilities2 && extensionsLookup_.EXT_full_screen_exclusive) {
+		VkSurfaceFullScreenExclusiveWin32InfoEXT fseWin32Info{ VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT };
+		fseWin32Info.hmonitor = MonitorFromWindow((HWND)winsysData2_, MONITOR_DEFAULTTONEAREST);
+		VkSurfaceFullScreenExclusiveInfoEXT fseInfo{ VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT };
+		fseInfo.pNext = &fseWin32Info;
+		fseInfo.fullScreenExclusive = VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT;
+		VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR };
+		surfaceInfo2.pNext = &fseInfo;
+		surfaceInfo2.surface = surface_;
+		VkSurfaceCapabilities2KHR surfaceCaps2{ VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR };
+		VkSurfaceCapabilitiesFullScreenExclusiveEXT fseCaps{ VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT };
+		ChainStruct(surfaceCaps2, &fseCaps);
+		VkResult fseRes = vkGetPhysicalDeviceSurfaceCapabilities2KHR(physical_devices_[physical_device_], &surfaceInfo2, &surfaceCaps2);
+		if (fseRes == VK_SUCCESS) {
+			fullScreenExclusiveSurfaceSupported_ = fseCaps.fullScreenExclusiveSupported == VK_TRUE;
+		}
+		INFO_LOG(Log::G3D, "Full-screen exclusive surface support: %s", fullScreenExclusiveSurfaceSupported_ ? "yes" : "no");
+	}
+#endif
+
 	return VK_SUCCESS;
 }
 

@@ -250,6 +250,9 @@ extern PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
 extern PFN_vkAcquireFullScreenExclusiveModeEXT vkAcquireFullScreenExclusiveModeEXT;
 extern PFN_vkReleaseFullScreenExclusiveModeEXT vkReleaseFullScreenExclusiveModeEXT;
 #endif
+#ifdef VK_KHR_get_surface_capabilities2
+extern PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+#endif
 #endif  // !PPSSPP_PLATFORM(IOS_APP_STORE)
 } // namespace PPSSPP_VK
 
@@ -277,6 +280,7 @@ struct VulkanExtensions {
 	bool KHR_present_mode_fifo_latest_ready;
 	bool EXT_scalar_block_layout;
 	bool EXT_full_screen_exclusive;
+	bool KHR_get_surface_capabilities2;
 	// bool EXT_depth_range_unrestricted;  // Allows depth outside [0.0, 1.0] in 32-bit float depth buffers.
 };
 

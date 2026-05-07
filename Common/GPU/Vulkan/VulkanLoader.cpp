@@ -247,6 +247,9 @@ PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
 PFN_vkAcquireFullScreenExclusiveModeEXT vkAcquireFullScreenExclusiveModeEXT;
 PFN_vkReleaseFullScreenExclusiveModeEXT vkReleaseFullScreenExclusiveModeEXT;
 #endif
+#ifdef VK_KHR_get_surface_capabilities2
+PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+#endif
 #endif
 } // namespace PPSSPP_VK
 
@@ -758,6 +761,12 @@ void VulkanLoadInstanceFunctions(VkInstance instance, const VulkanExtensions &en
 		LOAD_INSTANCE_FUNC(instance, vkSetDebugUtilsObjectNameEXT);
 		LOAD_INSTANCE_FUNC(instance, vkSetDebugUtilsObjectTagEXT);
 	}
+
+#ifdef VK_KHR_get_surface_capabilities2
+	if (enabledExtensions.KHR_get_surface_capabilities2) {
+		LOAD_INSTANCE_FUNC(instance, vkGetPhysicalDeviceSurfaceCapabilities2KHR);
+	}
+#endif
 
 	INFO_LOG(Log::G3D, "Vulkan instance functions loaded.");
 #endif
