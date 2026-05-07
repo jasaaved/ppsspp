@@ -337,17 +337,18 @@ namespace MainWindow {
 				g_Config.iWindowHeight = wp.rcNormalPosition.bottom - wp.rcNormalPosition.top;
 			}
 
+			const DWORD prevExStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
 			if (g_Config.bFullScreenMulti) {
 				SetMenu(hWnd, NULL);
-				// Strip all decorations
 				SetWindowLong(hWnd, GWL_STYLE, (prevStyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
+				SetWindowLong(hWnd, GWL_EXSTYLE, (prevExStyle & ~WS_EX_WINDOWEDGE) | WS_EX_TOPMOST);
 				// Maximize isn't enough to display on all monitors.
 				// Remember that negative coordinates may be valid.
 				const int totalX = GetSystemMetrics(SM_XVIRTUALSCREEN);
 				const int totalY = GetSystemMetrics(SM_YVIRTUALSCREEN);
 				const int totalWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
 				const int totalHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-				SetWindowPos(hWnd, HWND_TOP,
+				SetWindowPos(hWnd, HWND_TOPMOST,
 					totalX, totalY,
 					totalWidth, totalHeight,
 					SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
@@ -356,10 +357,9 @@ namespace MainWindow {
 				MONITORINFO mi = {sizeof(mi)};
 				if (GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &mi)) {
 					SetMenu(hWnd, NULL);
-					// Strip all decorations
 					SetWindowLong(hWnd, GWL_STYLE, (prevStyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
-
-					SetWindowPos(hWnd, HWND_TOP,
+					SetWindowLong(hWnd, GWL_EXSTYLE, (prevExStyle & ~WS_EX_WINDOWEDGE) | WS_EX_TOPMOST);
+					SetWindowPos(hWnd, HWND_TOPMOST,
 						mi.rcMonitor.left, mi.rcMonitor.top,
 						mi.rcMonitor.right - mi.rcMonitor.left,
 						mi.rcMonitor.bottom - mi.rcMonitor.top,
@@ -375,6 +375,7 @@ namespace MainWindow {
 
 			// Transitioning to Windowed
 			SetWindowLong(hWnd, GWL_STYLE, (prevStyle & ~WS_POPUP) | WS_OVERLAPPEDWINDOW);
+			SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) & ~WS_EX_TOPMOST);
 			SetMenu(hWnd, g_hMenu);
 
 			WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
@@ -391,7 +392,7 @@ namespace MainWindow {
 		CorrectCursor();
 
 		ShowOwnedPopups(hwndMain, goFullscreen ? FALSE : TRUE);
-		W32Util::MakeTopMost(hwndMain, g_Config.bTopMost);
+		W32Util::MakeTopMost(hwndMain, goFullscreen || g_Config.bTopMost);
 
 		WindowsRawInput::NotifyMenu();
 

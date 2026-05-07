@@ -127,6 +127,12 @@ bool WindowsVulkanContext::Init(HINSTANCE hInst, HWND hWnd, std::string *error_m
 
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
 
+#ifdef VK_EXT_full_screen_exclusive
+	vulkan_->SetFullScreenExclusiveMode(g_Config.bFullScreen && g_Config.bFullScreenExclusive
+		? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+		: VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT);
+#endif
+
 	if (!vulkan_->InitSwapchain(presentMode)) {
 		*error_message = vulkan_->InitError();
 		Shutdown();
@@ -179,15 +185,14 @@ void WindowsVulkanContext::Resize() {
 	draw_->HandleEvent(Draw::Event::LOST_BACKBUFFER, vulkan_->GetBackbufferWidth(), vulkan_->GetBackbufferHeight());
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
 #ifdef VK_EXT_full_screen_exclusive
-	bool wasExclusive = vulkan_->HasFullScreenExclusiveMode();
-	vulkan_->ReleaseFullScreenExclusiveMode();
-	if (wasExclusive) {
-		vulkan_->DestroySwapchain();
-	}
+	bool wantFSE = g_Config.bFullScreen && g_Config.bFullScreenExclusive;
+	vulkan_->SetFullScreenExclusiveMode(wantFSE
+		? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+		: VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT);
 #endif
 	vulkan_->InitSwapchain(presentMode);
 #ifdef VK_EXT_full_screen_exclusive
-	if (g_Config.bFullScreen && g_Config.bFullScreenExclusive)
+	if (wantFSE)
 		vulkan_->AcquireFullScreenExclusiveMode();
 #endif
 	draw_->HandleEvent(Draw::Event::GOT_BACKBUFFER, vulkan_->GetBackbufferWidth(), vulkan_->GetBackbufferHeight());
