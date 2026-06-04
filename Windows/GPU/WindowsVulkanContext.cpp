@@ -127,17 +127,16 @@ bool WindowsVulkanContext::Init(HINSTANCE hInst, HWND hWnd, std::string *error_m
 
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
 
-#ifdef VK_EXT_full_screen_exclusive
-	vulkan_->SetFullScreenExclusiveMode(g_Config.bFullScreen && g_Config.bFullScreenExclusive
-		? VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-		: VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
-#endif
-
 	if (!vulkan_->InitSwapchain(presentMode)) {
 		*error_message = vulkan_->InitError();
 		Shutdown();
 		return false;
 	}
+
+#ifdef VK_EXT_full_screen_exclusive
+	if (g_Config.bFullScreenExclusive)
+		vulkan_->AcquireFullScreenExclusiveMode();
+#endif
 
 	SetGPUBackend(GPUBackend::VULKAN, vulkan_->GetPhysicalDeviceProperties(deviceNum).properties.deviceName);
 	bool success = draw_->CreatePresets();
@@ -178,12 +177,27 @@ void WindowsVulkanContext::Resize() {
 	VkPresentModeKHR presentMode = ConfigPresentModeToVulkan(draw_);
 
 #ifdef VK_EXT_full_screen_exclusive
-	vulkan_->SetFullScreenExclusiveMode(g_Config.bFullScreen && g_Config.bFullScreenExclusive
-		? VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-		: VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT);
-#endif
+	bool wasExclusive = vulkan_->IsFullScreenExclusiveAcquired();
+	bool wantExclusive = g_Config.bFullScreenExclusive;
+
+	// Always release first — resets the acquired flag even if the OS already took FSE away,
+	// so AcquireFullScreenExclusiveMode will actually run on the new swapchain below.
+	vulkan_->ReleaseFullScreenExclusiveMode();
+
+	if (wasExclusive != wantExclusive) {
+		// Switching modes: destroy explicitly so the new swapchain is created fresh with the
+		// correct FSE create-info rather than inheriting state from oldSwapchain.
+		vulkan_->DestroySwapchain();
+	}
 
 	vulkan_->InitSwapchain(presentMode);
+
+	if (wantExclusive) {
+		vulkan_->AcquireFullScreenExclusiveMode();
+	}
+#else
+	vulkan_->InitSwapchain(presentMode);
+#endif
 	draw_->HandleEvent(Draw::Event::GOT_BACKBUFFER, vulkan_->GetBackbufferWidth(), vulkan_->GetBackbufferHeight());
 }
 

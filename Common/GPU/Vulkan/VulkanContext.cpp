@@ -1583,7 +1583,7 @@ bool VulkanContext::InitSwapchain(VkPresentModeKHR desiredPresentMode) {
 	VkSurfaceFullScreenExclusiveWin32InfoEXT win32ExclusiveInfo{ VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT };
 	if (extensionsLookup_.EXT_full_screen_exclusive) {
 		fullScreenInfo.fullScreenExclusive = fullScreenExclusiveMode_;
-		if (fullScreenExclusiveMode_ == VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT) {
+		if (fullScreenExclusiveMode_ == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT) {
 			win32ExclusiveInfo.hmonitor = MonitorFromWindow((HWND)winsysData2_, MONITOR_DEFAULTTONEAREST);
 			fullScreenInfo.pNext = &win32ExclusiveInfo;
 		}
@@ -1605,6 +1605,37 @@ bool VulkanContext::InitSwapchain(VkPresentModeKHR desiredPresentMode) {
 	}
 	return true;
 }
+
+#ifdef VK_EXT_full_screen_exclusive
+void VulkanContext::AcquireFullScreenExclusiveMode() {
+	if (fullScreenExclusiveAcquired_)
+		return;
+
+	if (extensionsLookup_.EXT_full_screen_exclusive) {
+		VkResult res = vkAcquireFullScreenExclusiveModeEXT(device_, swapchain_);
+		if (res == VK_SUCCESS) {
+			fullScreenExclusiveAcquired_ = true;
+		} else {
+			WARN_LOG(Log::G3D, "vkAcquireFullScreenExclusiveModeEXT failed: %s", VulkanResultToString(res));
+		}
+	}
+}
+
+void VulkanContext::ReleaseFullScreenExclusiveMode() {
+	if (!fullScreenExclusiveAcquired_)
+		return;
+
+	if (extensionsLookup_.EXT_full_screen_exclusive) {
+		VkResult res = vkReleaseFullScreenExclusiveModeEXT(device_, swapchain_);
+		if (res != VK_SUCCESS) {
+			WARN_LOG(Log::G3D, "vkReleaseFullScreenExclusiveModeEXT failed: %s", VulkanResultToString(res));
+		}
+		// Reset regardless of success — if the OS already took FSE away, the flag must still
+		// be cleared so AcquireFullScreenExclusiveMode can re-acquire on the new swapchain.
+		fullScreenExclusiveAcquired_ = false;
+	}
+}
+#endif
 
 void VulkanContext::SetCbGetDrawSize(std::function<VkExtent2D()> cb) {
 	cbGetDrawSize_ = cb;

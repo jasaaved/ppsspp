@@ -417,11 +417,8 @@ void GameSettingsScreen::CreateGraphicsSettings(UI::ViewGroup *graphicsSettings)
 			fullscreenExclusive->SetEnabledFunc([] {
 				return g_Config.bFullScreen && !g_Config.bFullScreenMulti;
 			});
-			fullscreenExclusive->OnClick.Add([this](UI::EventParams &e) {
-				TriggerRestartOrDo([this]() {
-					g_Config.bFullScreenExclusive = !g_Config.bFullScreenExclusive;
-					RecreateViews();
-				});
+			fullscreenExclusive->OnClick.Add([](UI::EventParams &e) {
+				NativeResized();
 			});
 		}
 		if (System_GetPropertyInt(SYSPROP_DISPLAY_COUNT) > 1) {
